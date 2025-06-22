@@ -5,17 +5,18 @@ const app = express();
 
 app.use(express.json());
 
-// בדיקה פשוטה ב-GET
+const commandPath = path.join('/tmp', 'command.json');
+
+// בדיקת תקינות
 app.get('/', (req, res) => {
   res.send('✅ MCP Server is running on Render');
 });
 
-// קבלת פקודת MCP מ-GPT ושמירתה לקובץ command.json
+// קבלת פקודה מה-GPT ושמירה לקובץ
 app.post('/api/command', (req, res) => {
   const command = req.body;
-  const filePath = path.join('/tmp', 'command.json'); // תיקייה זמנית בענן Render
 
-  fs.writeFile(filePath, JSON.stringify(command, null, 2), (err) => {
+  fs.writeFile(commandPath, JSON.stringify(command, null, 2), (err) => {
     if (err) {
       console.error('❌ Failed to save command:', err);
       return res.status(500).json({ status: 'error', message: 'Failed to save command' });
@@ -26,7 +27,20 @@ app.post('/api/command', (req, res) => {
   });
 });
 
-// (אופציונלי) ניתן להוסיף גם GET לקריאת הקובץ אם תרצה
+// שליפה של הפקודה האחרונה
+app.get('/api/command', (req, res) => {
+  fs.readFile(commandPath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('❌ No command file found.');
+      return res.status(404).json({ status: 'error', message: 'No command file found' });
+    }
+
+    res.status(200).json({
+      status: 'ok',
+      command: JSON.parse(data)
+    });
+  });
+});
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

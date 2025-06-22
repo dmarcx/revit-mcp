@@ -1,24 +1,32 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const app = express();
 
 app.use(express.json());
 
-// GET לבדיקה
+// בדיקה פשוטה ב-GET
 app.get('/', (req, res) => {
   res.send('✅ MCP Server is running on Render');
 });
 
-// POST לקבלת פקודות מ-GPT
+// קבלת פקודת MCP מ-GPT ושמירתה לקובץ command.json
 app.post('/api/command', (req, res) => {
-  console.log('📥 Received MCP command:');
-  console.log(req.body);
+  const command = req.body;
+  const filePath = path.join('/tmp', 'command.json'); // תיקייה זמנית בענן Render
 
-  // כאן תוכל בעתיד לשמור לקובץ, לשלוח ל-Revit וכו'
-  res.status(200).json({
-    status: 'ok',
-    received: req.body
+  fs.writeFile(filePath, JSON.stringify(command, null, 2), (err) => {
+    if (err) {
+      console.error('❌ Failed to save command:', err);
+      return res.status(500).json({ status: 'error', message: 'Failed to save command' });
+    }
+
+    console.log('✅ MCP command saved to command.json');
+    res.status(200).json({ status: 'ok', saved: true });
   });
 });
+
+// (אופציונלי) ניתן להוסיף גם GET לקריאת הקובץ אם תרצה
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
